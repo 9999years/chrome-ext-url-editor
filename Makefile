@@ -1,7 +1,9 @@
+zip=url-editor.zip
+
 zip:
-	rm url-editor.zip
-	7z a -mx1 url-editor.zip icon_16.png icon_32.png icon_48.png icon_128.png css/url-editor.css popup.html url-editor.js manifest.json
-	7z l url-editor.zip
+	rm -f "$(zip)"
+	7z a -mx1 "$(zip)" icon_16.png icon_32.png icon_48.png icon_128.png css/url-editor.css popup.html url-editor.js manifest.json
+	7z l "$(zip)"
 
 icon:
 	# input is icon.png

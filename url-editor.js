@@ -124,8 +124,8 @@ let display_hash = hash => hash.length === 0 ? '' : hash.substring(1)
 let set_hash = hash => hash.length === 0 ? '' : '#' + hash
 
 // hash is '' or '#...' (i.e. a URL.hash)
-// lmfao? everything on stack overflow was worse than this
-let hash_to_params = hash => new URL('http://a.a/?' + display_hash(hash)).searchParams
+// (shrugs)
+let hash_to_params = hash => new URLSearchParams('?' + display_hash(hash))
 
 // adds a new row with a static, i.e. uneditable, key field IFF val is defined
 // and non-empty
@@ -208,7 +208,7 @@ let set_hash_param = e => {
 let delete_hash_param = row => {
 	delete_param_abstract(row, url.hashParams)
 	url.updateHash()
-	row.remove()
+	row.parentElement.remove()
 }
 
 let delete_all_hash_params = e => {
@@ -396,7 +396,11 @@ function parse(newurl) {
 			key: { edit: false },
 			val: {
 				fn: display_hash,
-				change: e => url.hash = set_hash(e.target.value)
+				change: e => {
+					url.hash = set_hash(e.target.value)
+					display_url()
+					reparse()
+				}
 			}
 		})
 	}
