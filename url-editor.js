@@ -51,16 +51,19 @@ let delete_func = fn => {
 	}
 }
 
-function make_link(click, txt='×', link_class='del') {
+function make_link(click, txt='×', title='', link_class='del') {
 	let delete_link = document.createElement('a')
+	if(title) {
+		delete_link.setAttribute('title', title)
+	}
 	delete_link.addEventListener('click', click)
 	delete_link.innerHTML = txt
 	delete_link.className = link_class
 	return delete_link
 }
 
-function make_add_link(click, txt='add', link_class='add') {
-	return make_link(click, txt, link_class)
+function make_add_link(click, txt='add', title='', link_class='add') {
+	return make_link(click, txt, title, link_class)
 }
 
 // accepted keys in opts:
@@ -101,7 +104,7 @@ function make_row(key, val, opts={}) {
 	}
 	if(opts.delete) {
 		// TODO icon?
-		new_row.append(make_link(delete_func(opts.delete)))
+		new_row.append(make_link(delete_func(opts.delete), '×', 'delete row'))
 	}
 	// TODO reordering code
 	return new_row
@@ -229,7 +232,7 @@ function make_param(k, v, set_fn=set_param, delete_fn=delete_param) {
 	return make_li(row)
 }
 
-function add_param(e, section='parameters',
+function add_param(e, section='params',
 		set_fn=set_param, delete_fn=delete_param) {
 	//     a      div.row       li
 	li = e.target.parentElement.parentElement
@@ -241,7 +244,7 @@ function add_param(e, section='parameters',
 let add_hash_param = e => add_param(e, '#', set_hash_param, delete_hash_param)
 
 // sets up the params portion of the page
-function parse_params(searchParams, title_txt='parameters', add_txt='add param',
+function parse_params(searchParams, title_txt='params', add_txt='add param',
 		add_fn=add_param, set_fn=set_param, delete_fn=delete_param,
 		delete_all_fn=delete_all_params) {
 	let container = make_section(title_txt)
@@ -250,13 +253,19 @@ function parse_params(searchParams, title_txt='parameters', add_txt='add param',
 	//let title = container.firstElementChild
 	//title.append(make_link(delete_all_fn))
 
+	var i = 0
 	for(param of searchParams) {
 		list.append(make_param(param[0], param[1], set_fn, delete_fn))
+		i++
 	}
 
 	let add_link = document.createElement('div')
 	add_link.className = 'row'
-	add_link.append(make_add_link(add_fn, txt=add_txt))
+	add_link.append(make_add_link(add_fn, txt=add_txt, 'adds a new key=val parameter'))
+	if(i > 0) {
+		add_link.append('; ')
+		add_link.append(make_link(delete_all_fn, txt='delete all ' + title_txt, 'deletes the entire parameter list'))
+	}
 	list.append(make_li(add_link))
 
 	url_out.append(container)
@@ -274,6 +283,13 @@ let decrement_path_indicies_after = i => {
 			set_index(row, inx - 1)
 		}
 	}
+}
+
+let delete_entire_path = () => {
+	url.pathList = []
+	url.updatePath()
+	display_url()
+	parse_url_in()
 }
 
 let delete_path = row => {
@@ -333,7 +349,11 @@ function parse_path(pathname) {
 
 	// add link
 	let li = document.createElement('li')
-	li.append(make_add_link(add_path_part, txt='add path component'))
+	li.append(make_add_link(add_path_part, txt='add dir', 'adds a new directory or filename to the end of the path'))
+	if(url.pathList.length > 0) {
+		li.append('; ')
+		li.append(make_link(delete_entire_path, txt='delete entire path'))
+	}
 	list.append(li)
 
 	container.append(list)
@@ -385,7 +405,7 @@ function parse(newurl) {
 		val: { change: e => url.port = e.target.value }
 	})
 	parse_path(url.pathname)
-	parse_params(url.searchParams, title_text='parameters', add_txt='add query param')
+	parse_params(url.searchParams, title_text='params', add_txt='add query param')
 	if(probably_query_string(url.hash)) {
 		url.hashParams = hash_to_params(url.hash)
 		parse_params(url.hashParams, title_text='hash', add_txt='add # param',
