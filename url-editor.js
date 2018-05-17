@@ -59,7 +59,7 @@ function make_link(click, txt='×', link_class='del') {
 	return delete_link
 }
 
-function make_add_link(click, txt='+', link_class='add') {
+function make_add_link(click, txt='add', link_class='add') {
 	return make_link(click, txt, link_class)
 }
 
@@ -87,7 +87,7 @@ function make_row(key, val, opts={}) {
 			opts.key.class = 'key'
 		}
 		new_row.append(make_field(key, opts.key))
-		new_row.append(opts.delim || ': ')
+		new_row.append(opts.delim || '')
 	}
 
 	if(val !== undefined) {
@@ -162,11 +162,6 @@ function make_section(title) {
 	let ret = document.createElement('div')
 	ret.className = 'section'
 	ret.setAttribute('id', 'section-' + title.replace(/ /g, '-'))
-	if(title) {
-		let header = document.createElement('h2')
-		header.innerHTML = title
-		ret.append(header)
-	}
 	return ret
 }
 
@@ -231,34 +226,38 @@ function make_param(k, v, set_fn=set_param, delete_fn=delete_param) {
 	// store the key in an attribute so we know which key to edit in
 	// url.searchParams when we rename it
 	get_key(row).setAttribute('data-old', k)
-	return row
+	return make_li(row)
 }
 
 function add_param(e, section='parameters',
 		set_fn=set_param, delete_fn=delete_param) {
-	get_section(section).insertBefore(
+	//     a      div.row       li
+	li = e.target.parentElement.parentElement
+	li.parentElement.insertBefore(
 		make_param('', '', set_fn=set_fn, delete_fn=delete_fn),
-		e.target.parentElement)
+		li)
 }
 
 let add_hash_param = e => add_param(e, '#', set_hash_param, delete_hash_param)
 
 // sets up the params portion of the page
-function parse_params(searchParams, title_txt='parameters',
+function parse_params(searchParams, title_txt='parameters', add_txt='add param',
 		add_fn=add_param, set_fn=set_param, delete_fn=delete_param,
 		delete_all_fn=delete_all_params) {
 	let container = make_section(title_txt)
-	let title = container.firstElementChild
-	title.append(make_link(delete_all_fn))
+	let list = document.createElement('ul')
+	container.append(list)
+	//let title = container.firstElementChild
+	//title.append(make_link(delete_all_fn))
 
 	for(param of searchParams) {
-		container.append(make_param(param[0], param[1], set_fn, delete_fn))
+		list.append(make_param(param[0], param[1], set_fn, delete_fn))
 	}
 
 	let add_link = document.createElement('div')
 	add_link.className = 'row'
-	add_link.append(make_add_link(add_fn))
-	container.append(add_link)
+	add_link.append(make_add_link(add_fn, txt=add_txt))
+	list.append(make_li(add_link))
 
 	url_out.append(container)
 }
@@ -291,9 +290,14 @@ let change_path = e => {
 	url.updatePath()
 }
 
-function make_path_li(dir, index) {
+function make_li(inner_node) {
 	let li = document.createElement('li')
-	li.append(make_row(undefined, dir, {
+	li.append(inner_node)
+	return li
+}
+
+function make_path_li(dir, index) {
+	let li = make_li(make_row(undefined, dir, {
 		delete: delete_path,
 		val: {
 			edit: true,
@@ -329,7 +333,7 @@ function parse_path(pathname) {
 
 	// add link
 	let li = document.createElement('li')
-	li.append(make_add_link(add_path_part))
+	li.append(make_add_link(add_path_part, txt='add path component'))
 	list.append(li)
 
 	container.append(list)
@@ -381,10 +385,10 @@ function parse(newurl) {
 		val: { change: e => url.port = e.target.value }
 	})
 	parse_path(url.pathname)
-	parse_params(url.searchParams)
+	parse_params(url.searchParams, title_text='parameters', add_txt='add query param')
 	if(probably_query_string(url.hash)) {
 		url.hashParams = hash_to_params(url.hash)
-		parse_params(url.hashParams, title_text='#',
+		parse_params(url.hashParams, title_text='hash', add_txt='add # param',
 			add_hash_param, set_hash_param, delete_hash_param,
 			delete_all_hash_params)
 	} else {
@@ -398,17 +402,39 @@ function parse(newurl) {
 	}
 }
 
-let parse_url_in = e => parse(url_in.value)
+let parse_url_in = e => {
+	autosize()
+	parse(url_in.value)
+}
+
 let display_url = () => url_in.value = url.href
 let url_update_path = () => url.pathname = set_path(url.pathList.join('/'))
 let url_update_hash = () => url.hash = set_hash(url.hashParams.toString())
 let set_url_part = (part, val) => url[part] = val
 
+let update_current = e => {
+}
+
+function autosize() {
+	// Copy textarea contents; browser will calculate correct height of
+	// copy, which will make overall container taller, which will make
+	// textarea taller.
+	url_in_copy.innerHTML = url_in.value.replace(/\n/g, '<br/>')
+}
+
 function init() {
-	if(window.location.hash) {
-		url_in.value = display_hash(window.location.hash)
-	}
-	parse_url_in()
+	chrome.tabs.getSelected(tab => {
+		url_in.value = tab.url
+		parse_url_in()
+		copy.addEventListener('click', e => {
+			url_in.focus()
+			document.execCommand('selectAll')
+			document.execCommand('copy')
+		}, false)
+		refresh.addEventListener('click', e => {
+			chrome.tabs.update(tab.id, {url: url_in.value})
+		}, false)
+	})
 	url_in.addEventListener('change', parse_url_in, false)
 	url_in.addEventListener('input', parse_url_in, false)
 }

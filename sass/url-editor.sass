@@ -1,18 +1,104 @@
-@import vars
+$txt-color: #111
+$link-color: #00a
+$body-width: 300px
+$font: 14px
+$input-padding: 2px
+$bullet-width: 1em
 
-#url_in
-  height: 3em
+html
+  width: $body-width
 
-#url_out
-  .row
-    display: flex
-    margin-bottom: 0.2em
+html, body, textarea, input
+  word-wrap: break-word
+  font-family: sans-serif
+  font-size: $font
+  color: #111
 
-  #section-path li:before
-    content: '/'
+.row
+  display: flex
+  margin-bottom: 0.2em
 
-  input
+  * + input
+    margin-left: 2px
+
+  &.buttons
+    margin-bottom: 0.25em
+
+a
+  color: $link-color
+  cursor: pointer
+
+textarea, input
+  padding: $input-padding
+
+textarea
+  width: 100%
+  resize: none
+
+input, li:last-child
+  transform: translateY(-2 * $input-padding)
+
+li:last-child
+  margin-bottom: 2 * $input-padding
+
+ul
+  list-style: none
+  padding: 0
+  margin: 0
+
+li
+  position: relative
+  margin-left: $bullet-width
+
+  &:before
+    position: absolute
+    left: -$bullet-width
+    content: '&'
+
+#section-path li:before
+  content: '/'
+
+#section-parameters li:first-child:before
+    content: '?'
+
+#section-hash li:first-child:before
+    content: '#'
+
+#url_in_container
+  margin-top: 0.25em
+
+input
+  width: 100%
+
+hr
+  border: none
+  border-top: 1px solid rgba($txt-color, 0.5)
+  margin: ($font / 4) auto ($font / 4) auto
+  max-width: 3 * $font
+  height: 0
+
+  $before-margin: $font / 4 - $input-padding
+  $after-margin:  $font / 4 + 2 * $input-padding
+
+  &.before_list
+    margin: $before-margin auto 1.5 * $after-margin auto
+
+a.del
+  margin-left: 0.3em
+
+.textarea_container
+  position: relative
+
+  textarea, div
+    box-sizing: border-box
     width: 100%
+    padding: $input-padding
 
-  a.del
-    margin-left: 0.3em
+  textarea
+    height: 100%
+    overflow: hidden
+    position: absolute
+
+  div
+    visibility: hidden
+    padding-bottom: 1.15em
