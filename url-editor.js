@@ -12,8 +12,18 @@ let $ = id => document.getElementById(id)
 
 let input_change_fn = fn => {
 	return e => {
-		fn(e)
+		let reparse_required = fn(e)
 		display_url()
+		if(reparse_required) {
+			reparse()
+		}
+	}
+}
+
+let delete_fn = fn => {
+	let wrapped_fn = input_change_fn(fn)
+	return e => {
+		wrapped_fn(e.target.parentElement)
 	}
 }
 
@@ -44,19 +54,13 @@ function make_field(value, opts={}) {
 	return key
 }
 
-let delete_func = fn => {
-	return e => {
-		fn(e.target.parentElement)
-		display_url()
-	}
-}
-
 function make_link(click, txt='×', title='', link_class='del') {
 	let delete_link = document.createElement('a')
 	if(title) {
 		delete_link.setAttribute('title', title)
 	}
-	delete_link.addEventListener('click', click)
+	let click_fn = input_change_fn(click)
+	delete_link.addEventListener('click', click_fn)
 	delete_link.innerHTML = txt
 	delete_link.className = link_class
 	return delete_link
@@ -104,7 +108,7 @@ function make_row(key, val, opts={}) {
 	}
 	if(opts.delete) {
 		// TODO icon?
-		new_row.append(make_link(delete_func(opts.delete), '×', 'delete row'))
+		new_row.append(make_link(delete_fn(opts.delete), '×', 'delete row'))
 	}
 	// TODO reordering code
 	return new_row
@@ -168,19 +172,11 @@ function make_section(title) {
 	return ret
 }
 
-let get_key = row => row.getElementsByClassName('key')[0]
-let get_val = row => row.getElementsByClassName('val')[0]
-
-let reparse = () => {
-	display_url()
-	parse_url_in()
-}
-
 let delete_param_abstract = (row, params) => params.delete(get_key(row).value)
 
 let delete_param = row => {
 	delete_param_abstract(row, url.searchParams)
-	row.remove()
+	row.parentElement.remove()
 }
 
 let delete_all_params = e => {
@@ -288,8 +284,7 @@ let decrement_path_indicies_after = i => {
 let delete_entire_path = () => {
 	url.pathList = []
 	url.updatePath()
-	display_url()
-	parse_url_in()
+	return true // ask for reparse
 }
 
 let delete_path = row => {
@@ -418,26 +413,31 @@ function parse(newurl) {
 				fn: display_hash,
 				change: e => {
 					url.hash = set_hash(e.target.value)
-					display_url()
-					reparse()
+					return true // ask for reparse
 				}
 			}
 		})
 	}
 }
 
+let get_key = row => row.getElementsByClassName('key')[0]
+let get_val = row => row.getElementsByClassName('val')[0]
+
+let display_url = () => url_in.value = url.href
+
 let parse_url_in = e => {
 	autosize()
 	parse(url_in.value)
 }
 
-let display_url = () => url_in.value = url.href
+let reparse = () => {
+	url_in.value = url.href
+	parse_url_in()
+}
+
 let url_update_path = () => url.pathname = set_path(url.pathList.join('/'))
 let url_update_hash = () => url.hash = set_hash(url.hashParams.toString())
 let set_url_part = (part, val) => url[part] = val
-
-let update_current = e => {
-}
 
 function autosize() {
 	// Copy textarea contents; browser will calculate correct height of
